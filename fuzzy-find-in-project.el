@@ -66,8 +66,8 @@
 
 (defun fuzzy-find-project-root (root)
   "Sets the new fuzzy find project root."
-  (interactive "sSet fuzzy finder project root: ")
-  (setq fuzzy-find-project-root (expand-file-name root)))
+  (interactive "DSet fuzzy finder project root: ")
+  (setq fuzzy-find-project-root root))
 
 (defvar fuzzy-find-initialized nil
   "Tracks whether or not the fuzzy finder has been initialized.")
