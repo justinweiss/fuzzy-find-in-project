@@ -87,6 +87,9 @@
 (defvar fuzzy-find-selected-completion-index 1
   "1-based index of the currently selected completion")
 
+(defvar fuzzy-find-in-project-setup-hook nil
+  "Hook that runs after fuzzy-find-in-project initialization")
+
 (defun fuzzy-find-file (process query) 
   "Communicates with the fuzzy find gem, sending the query string `query' and retrieves the possible completions as a string."
   (setq fuzzy-find-completions "")
@@ -152,11 +155,12 @@ This function opens a window showing possible completions for the letters typed 
   (fuzzy-find-initialize)
   (add-hook 'minibuffer-setup-hook 'fuzzy-find-minibuffer-setup)
   (add-hook 'minibuffer-exit-hook 'fuzzy-find-minibuffer-exit)
+  (run-hooks 'fuzzy-find-in-project-setup-hook)
   (setq fuzzy-find-process (start-process-shell-command "ffip" nil (locate-file "fuzzy-find-in-project.rb" load-path) fuzzy-find-project-root))
   (set-process-filter fuzzy-find-process 'fuzzy-find-get-completions)
   (read-string "Find file: ")
   (cond 
-   ((eq fuzzy-find-exit 'find-file) 
+   ((eq fuzzy-find-exit 'find-file)
     (set-buffer fuzzy-find-completion-buffer-name)
     (let ((buffer-read-only nil))
       (fuzzy-find-unmark-beginning-of-line fuzzy-find-selected-completion-index "> "))
