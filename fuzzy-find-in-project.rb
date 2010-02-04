@@ -12,7 +12,7 @@ require 'fuzzy_file_finder'
 
 finder = FuzzyFileFinder.new(ARGV[0], 50000)
 while string = $stdin.readline
-  matches = finder.find(string, 50)
+  matches = finder.find(string.strip, 50)
   if matches && matches.length > 0
     matches.sort_by { |m| [-m[:score], m[:path]] }.each do |match|
       puts "%s" % match[:path]
