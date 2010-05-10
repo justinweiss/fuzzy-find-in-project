@@ -135,16 +135,17 @@
   "A hook to fuzzy find whatever string is in the minibuffer following the prompt. 
 Displays the completion list along with a selector in the `*Completions*' buffer. 
 The hook runs on each command."
-  (setq fuzzy-find-selected-completion-index 1)
-  (let ((query-string (buffer-substring-no-properties (minibuffer-prompt-end) (point-max)))) 
-    (get-buffer-create fuzzy-find-completion-buffer-name)
-    (set-buffer fuzzy-find-completion-buffer-name)
-    (let ((buffer-read-only nil))
-      (erase-buffer)
-      (insert (fuzzy-find-file fuzzy-find-process query-string))
-      (fuzzy-find-mark-beginning-of-line fuzzy-find-selected-completion-index "> "))
-    (goto-line fuzzy-find-selected-completion-index)
-    (display-buffer fuzzy-find-completion-buffer-name)))
+  (unless (eq (process-status fuzzy-find-process) 'exit)
+    (setq fuzzy-find-selected-completion-index 1)
+    (let ((query-string (buffer-substring-no-properties (minibuffer-prompt-end) (point-max)))) 
+      (get-buffer-create fuzzy-find-completion-buffer-name)
+      (set-buffer fuzzy-find-completion-buffer-name)
+      (let ((buffer-read-only nil))
+        (erase-buffer)
+        (insert (fuzzy-find-file fuzzy-find-process query-string))
+        (fuzzy-find-mark-beginning-of-line fuzzy-find-selected-completion-index "> "))
+      (goto-line fuzzy-find-selected-completion-index)
+      (display-buffer fuzzy-find-completion-buffer-name))))
 
 (defun fuzzy-find-in-project ()
   "The main function for finding a file in a project. 
@@ -153,10 +154,10 @@ This function opens a window showing possible completions for the letters typed 
   (interactive)
   (setq fuzzy-find-mode t)
   (fuzzy-find-initialize)
+  (run-hooks 'fuzzy-find-in-project-setup-hook)
+  (setq fuzzy-find-process (start-process "ffip" nil "ruby" (locate-file "fuzzy-find-in-project.rb" load-path) fuzzy-find-project-root))
   (add-hook 'minibuffer-setup-hook 'fuzzy-find-minibuffer-setup)
   (add-hook 'minibuffer-exit-hook 'fuzzy-find-minibuffer-exit)
-  (run-hooks 'fuzzy-find-in-project-setup-hook)
-  (setq fuzzy-find-process (start-process-shell-command "ffip" nil (locate-file "fuzzy-find-in-project.rb" load-path) fuzzy-find-project-root))
   (set-process-filter fuzzy-find-process 'fuzzy-find-get-completions)
   (read-string "Find file: ")
   (cond 
@@ -175,7 +176,8 @@ This function opens a window showing possible completions for the letters typed 
 (defun fuzzy-find-minibuffer-exit ()
   "Cleanup code when exiting the minibuffer"
   (when (eq fuzzy-find-mode t)
-    (interrupt-process fuzzy-find-process)
+    (when (eq (process-status fuzzy-find-process) 'run)
+      (interrupt-process fuzzy-find-process))
     (use-local-map (keymap-parent fuzzy-find-keymap))
     (setq fuzzy-find-mode nil)))
 
