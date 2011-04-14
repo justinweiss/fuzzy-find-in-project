@@ -147,6 +147,7 @@ The hook runs on each command."
       (goto-line fuzzy-find-selected-completion-index)
       (display-buffer fuzzy-find-completion-buffer-name))))
 
+;;;###autoload
 (defun fuzzy-find-in-project ()
   "The main function for finding a file in a project. 
 
