@@ -199,9 +199,7 @@ This function opens a window showing possible completions for the letters typed 
   "Reads line `line-number' from the current buffer."
   (save-excursion
     (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
-    (let ((begin-point (move-beginning-of-line nil))
-          (end-point (progn (move-end-of-line nil) (point))))
-      (buffer-substring-no-properties begin-point end-point))))
+    (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
 
 (defun fuzzy-find-select-completion ()
   "Selects the file at location `fuzzy-find-completion-index' and exits the minibuffer."
