@@ -144,7 +144,7 @@ The hook runs on each command."
         (erase-buffer)
         (insert (fuzzy-find-file fuzzy-find-process query-string))
         (fuzzy-find-mark-line fuzzy-find-selected-completion-index))
-      (goto-line fuzzy-find-selected-completion-index)
+      (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
       (display-buffer fuzzy-find-completion-buffer-name))))
 
 ;;;###autoload
@@ -198,7 +198,7 @@ This function opens a window showing possible completions for the letters typed 
 (defun fuzzy-find-read-line (line-number)
   "Reads line `line-number' from the current buffer."
   (save-excursion
-    (goto-line line-number)
+    (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
     (let ((begin-point (move-beginning-of-line nil))
           (end-point (progn (move-end-of-line nil) (point))))
       (buffer-substring-no-properties begin-point end-point))))
@@ -212,14 +212,14 @@ This function opens a window showing possible completions for the letters typed 
 (defun fuzzy-find-mark-line (line-number)
   "Highlights line at `line-number' and inserts '> ' at the beginning of line"
   (save-excursion
-    (goto-line line-number)
+    (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
     (insert "> ")
     (add-text-properties (line-beginning-position) (line-end-position) '(face highlight))))
 
 (defun fuzzy-find-unmark-line (line-number)
   "Removes '> ' from the beginning of line `line-number' if it begins with '> '."
   (save-excursion
-    (goto-line line-number)
+    (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
       (if (string-begins-with-p (fuzzy-find-read-line line-number) "> ") 
           (progn
             (delete-char 2)
@@ -235,7 +235,7 @@ This function opens a window showing possible completions for the letters typed 
     (if (< fuzzy-find-selected-completion-index 1) (setq fuzzy-find-selected-completion-index 1))
     (if (> fuzzy-find-selected-completion-index (count-lines (point-min) (point-max))) (setq fuzzy-find-selected-completion-index (count-lines (point-min) (point-max))))
     (fuzzy-find-mark-line fuzzy-find-selected-completion-index))
-    (goto-line fuzzy-find-selected-completion-index)
+    (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
     ;; make sure the window scrolls correctly
     (set-window-point (get-buffer-window fuzzy-find-completion-buffer-name) (point)))
 
