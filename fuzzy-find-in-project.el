@@ -95,7 +95,7 @@
   (setq fuzzy-find-completions "")
   (process-send-string process (concat query "\n"))
   (let ((count 0)) 
-    (while (and (not (string-ends-with-p fuzzy-find-completions "\nEND\n")) (> 200 count))
+    (while (and (not (string-suffix-p "\nEND\n" fuzzy-find-completions)) (> 200 count))
       (sleep-for 0 10)
       (setq count (1+ count))))
   (setq fuzzy-find-completions (string-trim-end fuzzy-find-completions (length "\nEND\n")))
@@ -107,25 +107,11 @@
     (substring string 0 (- (length string) num-chars))
     ""))
 
-(defun string-ends-with-p (string suffix)
+(defun string-suffix-p (suffix string)
   "Determines whether the string `string' ends with the suffix `suffix'."
-  (let ((string-length (length string))
-        (suffix-length (length suffix)))
-    (cond
-     ((> suffix-length string-length) 
-      nil)
-     (t 
-      (let ((start-index (- string-length suffix-length)))
-        (string= (substring string start-index string-length)
-                 suffix))))))
-
-(defun string-begins-with-p (string substring)
-  "Determines whether the string `string' begins with the substring `substring'."
-  (cond
-   ((> (length substring) (length string))
-    nil)
-   (t
-    (string= (substring string 0 (length substring)) substring))))
+  (if (> (length suffix) (length string))
+    nil
+    (compare-strings string (- (length string) (length suffix)) nil suffix 0 nil)))
 
 (defun fuzzy-find-get-completions (process output)
   "The process filter for retrieving data from the fuzzy_file_finder ruby gem"
@@ -218,7 +204,7 @@ This function opens a window showing possible completions for the letters typed 
   "Removes '> ' from the beginning of line `line-number' if it begins with '> '."
   (save-excursion
     (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
-      (if (string-begins-with-p (fuzzy-find-read-line line-number) "> ") 
+      (if (string-prefix-p "> " (fuzzy-find-read-line line-number)) 
           (progn
             (delete-char 2)
             (remove-text-properties (line-beginning-position) (line-end-position) '(face nil))))))
