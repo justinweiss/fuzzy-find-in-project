@@ -95,7 +95,7 @@
   (setq fuzzy-find-completions "")
   (process-send-string process (concat query "\n"))
   (let ((count 0)) 
-    (while (and (not (string-ends-with-p fuzzy-find-completions "\nEND\n")) (> 200 count))
+    (while (and (not (string-suffix-p "\nEND\n" fuzzy-find-completions)) (> 200 count))
       (sleep-for 0 10)
       (setq count (1+ count))))
   (setq fuzzy-find-completions (string-trim-end fuzzy-find-completions (length "\nEND\n")))
@@ -107,49 +107,35 @@
     (substring string 0 (- (length string) num-chars))
     ""))
 
-(defun string-ends-with-p (string suffix)
+(defun string-suffix-p (suffix string)
   "Determines whether the string `string' ends with the suffix `suffix'."
-  (let ((string-length (length string))
-        (suffix-length (length suffix)))
-    (cond
-     ((> suffix-length string-length) 
-      nil)
-     (t 
-      (let ((start-index (- string-length suffix-length)))
-        (string= (substring string start-index string-length)
-                 suffix))))))
-
-(defun string-begins-with-p (string substring)
-  "Determines whether the string `string' begins with the substring `substring'."
-  (cond
-   ((> (length substring) (length string))
-    nil)
-   (t
-    (string= (substring string 0 (length substring)) substring))))
+  (if (> (length suffix) (length string))
+    nil
+    (compare-strings string (- (length string) (length suffix)) nil suffix 0 nil)))
 
 (defun fuzzy-find-get-completions (process output)
   "The process filter for retrieving data from the fuzzy_file_finder ruby gem"
   (setq fuzzy-find-completions (concat fuzzy-find-completions output)))
 
 (defun fuzzy-find-command-hook ()
-  "A hook to fuzzy find whatever string is in the minibuffer following the prompt. 
-Displays the completion list along with a selector in the `*Completions*' buffer. 
+  "A hook to fuzzy find whatever string is in the minibuffer following the prompt.
+Displays the completion list along with a selector in the `*Completions*' buffer.
 The hook runs on each command."
   (unless (eq (process-status fuzzy-find-process) 'exit)
     (setq fuzzy-find-selected-completion-index 1)
-    (let ((query-string (buffer-substring-no-properties (minibuffer-prompt-end) (point-max)))) 
+    (let ((query-string (buffer-substring-no-properties (minibuffer-prompt-end) (point-max))))
       (get-buffer-create fuzzy-find-completion-buffer-name)
       (set-buffer fuzzy-find-completion-buffer-name)
       (let ((buffer-read-only nil))
         (erase-buffer)
         (insert (fuzzy-find-file fuzzy-find-process query-string))
-        (fuzzy-find-mark-beginning-of-line fuzzy-find-selected-completion-index "> "))
-      (goto-line fuzzy-find-selected-completion-index)
+        (fuzzy-find-mark-line fuzzy-find-selected-completion-index))
+      (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
       (display-buffer fuzzy-find-completion-buffer-name))))
 
 ;;;###autoload
 (defun fuzzy-find-in-project ()
-  "The main function for finding a file in a project. 
+  "The main function for finding a file in a project.
 
 This function opens a window showing possible completions for the letters typed into the minibuffer. By default the letters complete the file name; however, the finder can also complete on paths by typing a `/' into the minibuffer after the letters making up a path component. Move between selections using `C-n' and `C-p', and select a file to open using `<RET>'."
   (interactive)
@@ -161,11 +147,11 @@ This function opens a window showing possible completions for the letters typed 
   (add-hook 'minibuffer-exit-hook 'fuzzy-find-minibuffer-exit)
   (set-process-filter fuzzy-find-process 'fuzzy-find-get-completions)
   (read-string "Find file: ")
-  (cond 
+  (cond
    ((eq fuzzy-find-exit 'find-file)
     (set-buffer fuzzy-find-completion-buffer-name)
     (let ((buffer-read-only nil))
-      (fuzzy-find-unmark-beginning-of-line fuzzy-find-selected-completion-index "> "))
+      (fuzzy-find-unmark-line fuzzy-find-selected-completion-index))
     (find-file (fuzzy-find-read-line fuzzy-find-selected-completion-index)))))
 
 (defun fuzzy-find-minibuffer-setup ()
@@ -198,10 +184,8 @@ This function opens a window showing possible completions for the letters typed 
 (defun fuzzy-find-read-line (line-number)
   "Reads line `line-number' from the current buffer."
   (save-excursion
-    (goto-line line-number)
-    (let ((begin-point (move-beginning-of-line nil))
-          (end-point (progn (move-end-of-line nil) (point))))
-      (buffer-substring-no-properties begin-point end-point))))
+    (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
+    (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
 
 (defun fuzzy-find-select-completion ()
   "Selects the file at location `fuzzy-find-completion-index' and exits the minibuffer."
@@ -209,30 +193,33 @@ This function opens a window showing possible completions for the letters typed 
   (setq fuzzy-find-exit 'find-file)
   (exit-minibuffer))
 
-(defun fuzzy-find-mark-beginning-of-line (line-number tag)
-  "Inserts tag `tag' from the beginning of line `line-number'"
+(defun fuzzy-find-mark-line (line-number)
+  "Highlights line at `line-number' and inserts '> ' at the beginning of line"
   (save-excursion
-    (goto-line line-number)
-    (insert tag)))
+    (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
+    (insert "> ")
+    (add-text-properties (line-beginning-position) (line-end-position) '(face highlight))))
 
-(defun fuzzy-find-unmark-beginning-of-line (line-number tag)
-  "Removes tag `tag' from the beginning of line `line-number' if it begins with `tag'."
+(defun fuzzy-find-unmark-line (line-number)
+  "Removes '> ' from the beginning of line `line-number' if it begins with '> '."
   (save-excursion
-    (goto-line line-number)
-    (if (string-begins-with-p (fuzzy-find-read-line line-number) tag) 
-        (delete-char (length tag)))))
+    (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
+      (if (string-prefix-p "> " (fuzzy-find-read-line line-number)) 
+          (progn
+            (delete-char 2)
+            (remove-text-properties (line-beginning-position) (line-end-position) '(face nil))))))
 
 (defun fuzzy-find-mark-completion (completion-index-delta)
   "Moves the completion index marker by `completion-index-delta' and marks the line corresponding to the currently selected completion."
   (set-buffer fuzzy-find-completion-buffer-name)
   (let ((buffer-read-only nil))
-    (fuzzy-find-unmark-beginning-of-line fuzzy-find-selected-completion-index "> ")
+    (fuzzy-find-unmark-line fuzzy-find-selected-completion-index)
     (setq fuzzy-find-selected-completion-index (+ completion-index-delta fuzzy-find-selected-completion-index))
     ;; reset completion index if it falls out of bounds
     (if (< fuzzy-find-selected-completion-index 1) (setq fuzzy-find-selected-completion-index 1))
     (if (> fuzzy-find-selected-completion-index (count-lines (point-min) (point-max))) (setq fuzzy-find-selected-completion-index (count-lines (point-min) (point-max))))
-    (fuzzy-find-mark-beginning-of-line fuzzy-find-selected-completion-index "> "))
-    (goto-line fuzzy-find-selected-completion-index)
+    (fuzzy-find-mark-line fuzzy-find-selected-completion-index))
+    (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
     ;; make sure the window scrolls correctly
     (set-window-point (get-buffer-window fuzzy-find-completion-buffer-name) (point)))
 
