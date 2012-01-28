@@ -1,4 +1,4 @@
-;; fuzzy-find-in-project.el - Emacs binding to the `fuzzy_file_finder' rubygem.
+;;; fuzzy-find-in-project.el --- Emacs binding to the `fuzzy_file_finder' rubygem.
 
 ;; Author: Justin Weiss
 ;; URL: http://github.com/avvo/fuzzy-find-in-project/tree/master
