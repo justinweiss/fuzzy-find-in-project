@@ -5,11 +5,11 @@
 ;; Version: 1.0
 ;; Created: 2008-10-14
 ;; Keywords: project, convenience
- 
+
 ;; This file is NOT part of GNU Emacs.
- 
+
 ;;; License:
- 
+
 ;; Copyright (c) 2008 Justin Weiss
 ;;
 ;; Permission is hereby granted, free of charge, to any person
@@ -33,28 +33,28 @@
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 ;; OTHER DEALINGS IN THE SOFTWARE.
 
-;;; Commentary: 
+;;; Commentary:
 
-;; Requires ruby, rubygems, and the `fuzzy_file_finder' rubygem. 
+;; Requires ruby, rubygems, and the `fuzzy_file_finder' rubygem.
 ;;
-;; The `fuzzy_file_finder' rubygem can be installed with the following command: 
+;; The `fuzzy_file_finder' rubygem can be installed with the following command:
 ;; `sudo gem install --source http://gems.github.com jamis-fuzzy_file_finder'
 
 ;;; Usage:
 ;; The primary interface into the functionality provided by this file is through
-;; the `fuzzy-find-in-project' function. Calling this function will match the query to 
+;; the `fuzzy-find-in-project' function. Calling this function will match the query to
 ;; the files under `fuzzy-find-project-root' and open up a completion buffer with
 ;; the first matched file selected (with a `> '.) The selection can be changed using
-;; `C-n' and `C-p', and the currently selected file can be opened using `<RET>'. 
+;; `C-n' and `C-p', and the currently selected file can be opened using `<RET>'.
 
 ;;; Configuration:
-;; In your .emacs or init.el: 
+;; In your .emacs or init.el:
 ;;
 ;; (add-to-list 'load-path "~/.emacs.d/path/to/fuzzy-find-in-project")
 ;; (require 'fuzzy-find-in-project)
 ;; (fuzzy-find-project-root "~/path/to/project")
 
-;;; TODO: 
+;;; TODO:
 ;; - Clean up *Completions* buffer on exit
 ;; - Use project-local-variables to scope the find to the current file's project
 ;; - misc. cleanup and error handling (make sure process is killed on failure, etc.)
@@ -90,11 +90,11 @@
 (defvar fuzzy-find-in-project-setup-hook nil
   "Hook that runs after fuzzy-find-in-project initialization")
 
-(defun fuzzy-find-file (process query) 
+(defun fuzzy-find-file (process query)
   "Communicates with the fuzzy find gem, sending the query string `query' and retrieves the possible completions as a string."
   (setq fuzzy-find-completions "")
   (process-send-string process (concat query "\n"))
-  (let ((count 0)) 
+  (let ((count 0))
     (while (and (not (string-suffix-p "\nEND\n" fuzzy-find-completions)) (> 200 count))
       (sleep-for 0 10)
       (setq count (1+ count))))
@@ -170,7 +170,7 @@ This function opens a window showing possible completions for the letters typed 
 
 (defun fuzzy-find-initialize ()
   "Initialize the keymap and other things that need to be setup before the first run of the fuzzy file finder."
-  (if (not fuzzy-find-initialized) 
+  (if (not fuzzy-find-initialized)
       (progn
         (setq fuzzy-find-keymap (make-sparse-keymap))
         (set-keymap-parent fuzzy-find-keymap minibuffer-local-map)
@@ -178,7 +178,7 @@ This function opens a window showing possible completions for the letters typed 
         (define-key fuzzy-find-keymap "\C-p" 'fuzzy-find-previous-completion)
         (define-key fuzzy-find-keymap "\r" 'fuzzy-find-select-completion)
         (setq fuzzy-find-initialized t))))
-        
+
 ;;unwind-protect around main loop?
 
 (defun fuzzy-find-read-line (line-number)
@@ -204,7 +204,7 @@ This function opens a window showing possible completions for the letters typed 
   "Removes '> ' from the beginning of line `line-number' if it begins with '> '."
   (save-excursion
     (goto-char (point-min)) (forward-line (1- fuzzy-find-selected-completion-index))
-      (if (string-prefix-p "> " (fuzzy-find-read-line line-number)) 
+      (if (string-prefix-p "> " (fuzzy-find-read-line line-number))
           (progn
             (delete-char 2)
             (remove-text-properties (line-beginning-position) (line-end-position) '(face nil))))))
@@ -227,10 +227,10 @@ This function opens a window showing possible completions for the letters typed 
   "Selects the next completion."
   (interactive)
   (fuzzy-find-mark-completion 1))
-    
+
 (defun fuzzy-find-previous-completion ()
   "Selects the previous completion."
   (interactive)
   (fuzzy-find-mark-completion -1))
-    
+
 (provide 'fuzzy-find-in-project)
