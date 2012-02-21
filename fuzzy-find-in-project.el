@@ -111,7 +111,7 @@
   "Determines whether the string `string' ends with the suffix `suffix'."
   (if (> (length suffix) (length string))
     nil
-    (compare-strings string (- (length string) (length suffix)) nil suffix 0 nil)))
+    (eq t (compare-strings string (- (length string) (length suffix)) nil suffix 0 nil))))
 
 (defun fuzzy-find-get-completions (process output)
   "The process filter for retrieving data from the fuzzy_file_finder ruby gem"
